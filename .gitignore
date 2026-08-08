@@ -1,14 +1,31 @@
-.dart_tool/
-.packages
-.pub-cache/
-.pub/
+# Flutter
 build/
-.idea/
-.vs/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
 *.iml
-.android/
-.ios/
 *.lock
-/*.log
-# ignore local logo until added
-assets/images/logo.png
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.DS_Store
+
+# Environment
+.env
+.env.local
+
+# Generated files
+*.g.dart
+*.config.dart
+
+# Coverage
+coverage/
+
+# Logs
+*.log
