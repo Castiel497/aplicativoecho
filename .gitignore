@@ -1,0 +1,14 @@
+.dart_tool/
+.packages
+.pub-cache/
+.pub/
+build/
+.idea/
+.vs/
+*.iml
+.android/
+.ios/
+*.lock
+/*.log
+# ignore local logo until added
+assets/images/logo.png
