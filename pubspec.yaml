@@ -1,0 +1,25 @@
+name: ecochoice
+description: ECOCHOICE - MVP para consumo consciente (Pense antes de comprar.)
+publish_to: "none"
+version: 0.1.0
+environment:
+  sdk: ">=2.18.0 <3.0.0"
+
+dependencies:
+  flutter:
+    sdk: flutter
+  provider: ^6.0.5
+  hive: ^2.2.3
+  hive_flutter: ^1.1.0
+  intl: ^0.18.1
+  uuid: ^3.0.7
+  flutter_svg: ^1.1.6
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+
+flutter:
+  uses-material-design: true
+  assets:
+    - assets/images/logo.png
