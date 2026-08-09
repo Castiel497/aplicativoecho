@@ -1,13 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
-import 'package:consome_plus/config/theme.dart';
 import 'package:consome_plus/providers/user_provider.dart';
-import 'package:consome_plus/utils/validators.dart';
-import 'package:consome_plus/utils/constants.dart';
+import 'package:consome_plus/screens/home/home_screen.dart';
 
-/// Welcome Screen do CONSOME+
-/// Tela inicial para novos usuários
-/// Coleta o nome do usuário e começa o app
 class WelcomeScreen extends StatefulWidget {
   const WelcomeScreen({Key? key}) : super(key: key);
 
@@ -16,9 +11,14 @@ class WelcomeScreen extends StatefulWidget {
 }
 
 class _WelcomeScreenState extends State<WelcomeScreen> {
-  final _nameController = TextEditingController();
-  final _formKey = GlobalKey<FormState>();
+  late TextEditingController _nameController;
   bool _isLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _nameController = TextEditingController();
+  }
 
   @override
   void dispose() {
@@ -26,153 +26,164 @@ class _WelcomeScreenState extends State<WelcomeScreen> {
     super.dispose();
   }
 
-  /// Cria novo usuário e navega para Home
-  Future<void> _startApp() async {
-    if (!_formKey.currentState!.validate()) return;
+  void _handleContinue() {
+    if (_nameController.text.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Por favor, insira seu nome'),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
 
     setState(() => _isLoading = true);
+    
+    context.read<UserProvider>().updateUserName(_nameController.text);
 
-    try {
-      final userProvider = context.read<UserProvider>();
-      await userProvider.createUser(_nameController.text.trim());
-
+    Future.delayed(const Duration(milliseconds: 500), () {
       if (mounted) {
-        Navigator.of(context).pushReplacementNamed('/home');
-      }
-    } catch (e) {
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(content: Text('Erro: $e')),
+        Navigator.of(context).pushReplacementNamed(
+          '/home',
+          arguments: const HomeScreen(),
         );
       }
-    } finally {
-      if (mounted) {
-        setState(() => _isLoading = false);
-      }
-    }
+    });
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.lightBackground,
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-          child: Form(
-            key: _formKey,
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Theme.of(context).colorScheme.primary,
+              Theme.of(context).colorScheme.primary.withOpacity(0.7),
+            ],
+          ),
+        ),
+        child: SafeArea(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.all(24),
             child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.center,
               children: [
-                // Logo/Título
-                Text(
+                const SizedBox(height: 60),
+                Container(
+                  width: 100,
+                  height: 100,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.2),
+                    borderRadius: BorderRadius.circular(30),
+                  ),
+                  child: const Icon(
+                    Icons.shopping_bag,
+                    size: 60,
+                    color: Colors.white,
+                  ),
+                ),
+                const SizedBox(height: 32),
+                const Text(
                   'CONSOME+',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.displayMedium?.copyWith(
-                    color: AppColors.primaryGreen,
+                  style: TextStyle(
+                    fontSize: 48,
                     fontWeight: FontWeight.bold,
+                    color: Colors.white,
                   ),
-                ),
-                const SizedBox(height: 16),
-
-                // Slogan
-                Text(
-                  'Pense antes de comprar.',
-                  textAlign: TextAlign.center,
-                  style: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                    color: AppColors.accentGreen,
-                  ),
-                ),
-                const SizedBox(height: 48),
-
-                // Boas-vindas
-                Text(
-                  'Bem-vindo ao CONSOME+!',
-                  style: Theme.of(context).textTheme.headlineMedium?.copyWith(
-                    color: AppColors.darkText,
-                  ),
-                ),
-                const SizedBox(height: 16),
-
-                // Descrição
-                Text(
-                  'Ajudamos você a fazer compras mais conscientes, '
-                  'economizando dinheiro e protegendo o planeta.\n\n'
-                  'Vamos começar?',
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                    color: AppColors.mediumText,
-                  ),
-                ),
-                const SizedBox(height: 40),
-
-                // Campo de nome
-                TextFormField(
-                  controller: _nameController,
-                  decoration: InputDecoration(
-                    hintText: 'Seu nome',
-                    prefixIcon: const Icon(Icons.person_outline),
-                    filled: true,
-                    fillColor: AppColors.white,
-                  ),
-                  validator: AppValidators.validateName,
-                  textInputAction: TextInputAction.done,
-                  onFieldSubmitted: (_) => _startApp(),
-                ),
-                const SizedBox(height: 24),
-
-                // Botão de início
-                ElevatedButton(
-                  onPressed: _isLoading ? null : _startApp,
-                  child: _isLoading
-                      ? SizedBox(
-                          height: 20,
-                          width: 20,
-                          child: CircularProgressIndicator(
-                            strokeWidth: 2,
-                            valueColor: AlwaysStoppedAnimation<Color>(
-                              Theme.of(context).colorScheme.primary,
-                            ),
-                          ),
-                        )
-                      : const Text('Começar'),
-                ),
-                const SizedBox(height: 24),
-
-                // Features preview
-                Text(
-                  'O que você vai descobrir:',
-                  style: Theme.of(context).textTheme.labelLarge,
                 ),
                 const SizedBox(height: 12),
-                ..._buildFeaturesList(context),
+                const Text(
+                  'Pense antes de comprar',
+                  style: TextStyle(
+                    fontSize: 18,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w300,
+                  ),
+                ),
+                const SizedBox(height: 60),
+                Container(
+                  padding: const EdgeInsets.all(24),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.15),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Vamos começar!',
+                        style: TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      const Text(
+                        'Como você se chama?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey,
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+                      TextField(
+                        controller: _nameController,
+                        enabled: !_isLoading,
+                        decoration: InputDecoration(
+                          hintText: 'Digite seu nome',
+                          prefixIcon: const Icon(Icons.person),
+                          border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          filled: true,
+                          fillColor: Colors.grey[50],
+                        ),
+                        textInputAction: TextInputAction.done,
+                        onSubmitted: (_) => _handleContinue(),
+                      ),
+                      const SizedBox(height: 24),
+                      SizedBox(
+                        width: double.infinity,
+                        height: 56,
+                        child: FilledButton(
+                          onPressed: _isLoading ? null : _handleContinue,
+                          child: _isLoading
+                              ? const SizedBox(
+                                  height: 24,
+                                  width: 24,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      Colors.white,
+                                    ),
+                                  ),
+                                )
+                              : const Text(
+                                  'Continuar',
+                                  style: TextStyle(fontSize: 16),
+                                ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 60),
               ],
             ),
           ),
         ),
       ),
     );
-  }
-
-  /// Constrói lista de features
-  List<Widget> _buildFeaturesList(BuildContext context) {
-    final features = [
-      '🎯 Pausa Consciente - Reflita antes de comprar',
-      '💰 Dinheiro Preservado - Veja quanto você economiza',
-      '📊 ECO SCORE - Acompanhe seu progresso',
-      '⭐ Desafios - Ganhe XP e suba de nível',
-      '📈 Impacto - Veja seu impacto no planeta',
-    ];
-
-    return features
-        .map((feature) => Padding(
-          padding: const EdgeInsets.symmetric(vertical: 4),
-          child: Text(
-            feature,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: AppColors.mediumText,
-            ),
-          ),
-        ))
-        .toList();
   }
 }
