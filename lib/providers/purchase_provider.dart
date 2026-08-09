@@ -1,116 +1,63 @@
-import 'package:flutter/material.dart';
-import 'package:consome_plus/models/purchase_model.dart';
-import 'package:consome_plus/data/mock_data.dart';
+import 'package:flutter/foundation.dart';
 
-/// Provider para gerenciar estado de compras
-/// Responsável por:
-/// - Manter histórico de compras
-/// - Registrar novas compras
-/// - Atualizar decisão final de compra
+/// Modelo de compra
+class Purchase {
+  final String id;
+  final String title;
+  final double price;
+  final DateTime date;
+  final String category;
+  final bool isPaused;
+
+  Purchase({
+    required this.id,
+    required this.title,
+    required this.price,
+    required this.date,
+    required this.category,
+    this.isPaused = false,
+  });
+}
+
+/// Provider que gerencia histórico de compras
 class PurchaseProvider extends ChangeNotifier {
-  List<Purchase> _purchases = [];
-  bool _isLoading = false;
+  final List<Purchase> _purchases = [];
 
-  // Getters
   List<Purchase> get purchases => _purchases;
-  bool get isLoading => _isLoading;
 
-  /// Inicializa o provider
-  PurchaseProvider() {
-    _initializePurchases();
-  }
-
-  /// Carrega compras do armazenamento local
-  Future<void> _initializePurchases() async {
-    _isLoading = true;
-    notifyListeners();
-
-    try {
-      // TODO: Implementar carregamento do Hive
-      // Por enquanto, usando lista vazia
-      await Future.delayed(const Duration(milliseconds: 300));
-      _purchases = [];
-    } catch (e) {
-      print('Erro ao carregar compras: $e');
-      _purchases = [];
-    } finally {
-      _isLoading = false;
-      notifyListeners();
-    }
-  }
-
-  /// Adiciona nova compra ao histórico
+  /// Adicionar nova compra
   void addPurchase(Purchase purchase) {
-    _purchases.insert(0, purchase); // Adiciona no início (mais recente)
-    
-    // TODO: Salvar no Hive
+    _purchases.add(purchase);
     notifyListeners();
   }
 
-  /// Atualiza a decisão final de uma compra
-  /// Se notBought = true, user não comprou
-  /// Se notBought = false, user comprou mesmo assim
-  void updatePurchaseDecision(
-    String purchaseId,
-    bool finalDecision,
-  ) {
+  /// Remover compra
+  void removePurchase(String purchaseId) {
+    _purchases.removeWhere((p) => p.id == purchaseId);
+    notifyListeners();
+  }
+
+  /// Pausar compra (pausa consciente)
+  void pausePurchase(String purchaseId) {
     final index = _purchases.indexWhere((p) => p.id == purchaseId);
-    
     if (index != -1) {
-      _purchases[index] = _purchases[index].copyWith(
-        finalDecision: finalDecision,
-        decidedAt: DateTime.now(),
+      _purchases[index] = Purchase(
+        id: _purchases[index].id,
+        title: _purchases[index].title,
+        price: _purchases[index].price,
+        date: _purchases[index].date,
+        category: _purchases[index].category,
+        isPaused: !_purchases[index].isPaused,
       );
-      
-      // TODO: Salvar no Hive
       notifyListeners();
     }
   }
 
-  /// Retorna compras não compradas (evitadas)
-  List<Purchase> getPurchasesAvoided() {
-    return _purchases.where((p) => p.finalDecision == false).toList();
+  /// Total gasto
+  double get totalSpent {
+    return _purchases.fold(0, (sum, p) => sum + p.price);
   }
 
-  /// Retorna compras realizadas
-  List<Purchase> getPurchasesMade() {
-    return _purchases.where((p) => p.finalDecision == true).toList();
-  }
-
-  /// Retorna compras por resultado
-  List<Purchase> getPurchasesByResult(ConsciousPauseResult result) {
-    return _purchases.where((p) => p.result == result).toList();
-  }
-
-  /// Calcula total economizado
-  double getTotalMoneyPreserved() {
-    double total = 0;
-    for (var purchase in getPurchasesAvoided()) {
-      total += purchase.price;
-    }
-    return total;
-  }
-
-  /// Calcula XP total ganho
-  int getTotalXPEarned() {
-    int total = 0;
-    for (var purchase in _purchases) {
-      if (purchase.finalDecision == false) {
-        total += purchase.ecoXPEarned;
-      }
-    }
-    return total;
-  }
-
-  /// Carrega compras mockadas (para teste)
-  void loadMockPurchases(String userId) {
-    _purchases = MockData.createMockPurchases(userId);
-    notifyListeners();
-  }
-
-  /// Limpa todas as compras
-  void clearPurchases() {
-    _purchases.clear();
-    notifyListeners();
-  }
+  /// Quantidade de compras
+  int get purchaseCount => _purchases.length;
 }
