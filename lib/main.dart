@@ -4,8 +4,7 @@ import 'package:consome_plus/config/theme.dart';
 import 'package:consome_plus/providers/user_provider.dart';
 import 'package:consome_plus/providers/purchase_provider.dart';
 import 'package:consome_plus/providers/stats_provider.dart';
-import 'package:consome_plus/screens/home/home_screen.dart';
-import 'package:consome_plus/screens/welcome/welcome_screen.dart';
+import 'package:consome_plus/screens/app_wrapper.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -38,7 +37,7 @@ class ConsomePlusApp extends StatelessWidget {
         theme: AppTheme.lightTheme,
         darkTheme: AppTheme.darkTheme,
         themeMode: ThemeMode.system,
-        home: const WelcomeScreen(),
+        home: const AppWrapper(),
       ),
     );
   }
