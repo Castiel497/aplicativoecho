@@ -3,10 +3,27 @@ import 'package:provider/provider.dart';
 import 'package:consome_plus/providers/user_provider.dart';
 import 'package:consome_plus/providers/purchase_provider.dart';
 import 'package:consome_plus/providers/stats_provider.dart';
+import 'package:consome_plus/screens/purchase/add_purchase_screen.dart';
+import 'package:consome_plus/screens/profile/profile_screen.dart';
+import 'package:consome_plus/screens/stats/stats_screen.dart';
+import 'package:consome_plus/utils/currency_formatter.dart';
 
-/// Tela principal do aplicativo
-class HomeScreen extends StatelessWidget {
+class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
+
+  @override
+  State<HomeScreen> createState() => _HomeScreenState();
+}
+
+class _HomeScreenState extends State<HomeScreen> {
+  int _currentIndex = 0;
+  final PageController _pageController = PageController();
+
+  @override
+  void dispose() {
+    _pageController.dispose();
+    super.dispose();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -14,142 +31,245 @@ class HomeScreen extends StatelessWidget {
       appBar: AppBar(
         title: const Text('CONSOME+'),
         elevation: 0,
+        actions: [
+          Padding(
+            padding: const EdgeInsets.all(16),
+            child: Center(
+              child: Consumer<UserProvider>(
+                builder: (context, userProvider, _) {
+                  return Text(
+                    'Nível ${userProvider.level}',
+                    style: const TextStyle(
+                      fontWeight: FontWeight.bold,
+                      fontSize: 16,
+                      color: Colors.white,
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+        ],
       ),
-      body: SingleChildScrollView(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // Cartão do usuário
-            _buildUserCard(context),
-            const SizedBox(height: 24),
-            
-            // Estatísticas
-            _buildStatsSection(context),
-            const SizedBox(height: 24),
-            
-            // Últimas compras
-            _buildPurchasesSection(context),
-          ],
-        ),
+      body: PageView(
+        controller: _pageController,
+        onPageChanged: (index) {
+          setState(() => _currentIndex = index);
+        },
+        children: const [
+          _HomeTabContent(),
+          StatsScreen(),
+          ProfileScreen(),
+        ],
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
-          // TODO: Implementar adição de compra
+          showModalBottomSheet(
+            context: context,
+            isScrollControlled: true,
+            backgroundColor: Colors.transparent,
+            builder: (context) => const AddPurchaseScreen(),
+          );
         },
+        tooltip: 'Adicionar compra',
         child: const Icon(Icons.add_shopping_cart),
+      ),
+      bottomNavigationBar: NavigationBar(
+        selectedIndex: _currentIndex,
+        onDestinationSelected: (index) {
+          _pageController.animateToPage(
+            index,
+            duration: const Duration(milliseconds: 300),
+            curve: Curves.easeInOut,
+          );
+        },
+        destinations: const [
+          NavigationDestination(
+            icon: Icon(Icons.home_outlined),
+            selectedIcon: Icon(Icons.home),
+            label: 'Home',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.bar_chart_outlined),
+            selectedIcon: Icon(Icons.bar_chart),
+            label: 'Estatísticas',
+          ),
+          NavigationDestination(
+            icon: Icon(Icons.person_outline),
+            selectedIcon: Icon(Icons.person),
+            label: 'Perfil',
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _HomeTabContent extends StatelessWidget {
+  const _HomeTabContent();
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.all(16),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          _buildUserCard(context),
+          const SizedBox(height: 24),
+          _buildQuickStatsSection(context),
+          const SizedBox(height: 24),
+          _buildRecentPurchasesSection(context),
+        ],
       ),
     );
   }
 
-  /// Cartão com informações do usuário
   Widget _buildUserCard(BuildContext context) {
     return Consumer<UserProvider>(
       builder: (context, userProvider, _) {
-        return Card(
-          elevation: 4,
-          child: Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Bem-vindo!',
-                          style: TextStyle(
-                            fontSize: 14,
-                            color: Colors.grey,
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          userProvider.userName.isEmpty
-                              ? 'Usuário'
-                              : userProvider.userName,
-                          style: const TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ],
-                    ),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 6,
-                      ),
-                      decoration: BoxDecoration(
-                        color: Theme.of(context).colorScheme.primary,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Nível ${userProvider.level}',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Barra de XP
-                ClipRRect(
-                  borderRadius: BorderRadius.circular(8),
-                  child: LinearProgressIndicator(
-                    value: (userProvider.xp % 1000) / 1000,
-                    minHeight: 8,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'XP: ${userProvider.xp % 1000}/1000',
-                  style: const TextStyle(fontSize: 12, color: Colors.grey),
-                ),
+        return Container(
+          decoration: BoxDecoration(
+            gradient: LinearGradient(
+              begin: Alignment.topLeft,
+              end: Alignment.bottomRight,
+              colors: [
+                Theme.of(context).colorScheme.primary,
+                Theme.of(context).colorScheme.primary.withOpacity(0.8),
               ],
             ),
+            borderRadius: BorderRadius.circular(16),
+            boxShadow: [
+              BoxShadow(
+                color: Theme.of(context).colorScheme.primary.withOpacity(0.3),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          padding: const EdgeInsets.all(20),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'Bem-vindo!',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.white70,
+                          fontWeight: FontWeight.w500,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        userProvider.userName.isEmpty
+                            ? 'Usuário'
+                            : userProvider.userName,
+                        style: const TextStyle(
+                          fontSize: 24,
+                          fontWeight: FontWeight.bold,
+                          color: Colors.white,
+                        ),
+                      ),
+                    ],
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(
+                        color: Colors.white.withOpacity(0.3),
+                      ),
+                    ),
+                    child: Text(
+                      'LVL ${userProvider.level}',
+                      style: const TextStyle(
+                        color: Colors.white,
+                        fontWeight: FontWeight.bold,
+                        fontSize: 14,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 16),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(8),
+                child: LinearProgressIndicator(
+                  value: (userProvider.xp % 1000) / 1000,
+                  minHeight: 10,
+                  backgroundColor: Colors.white.withOpacity(0.3),
+                  valueColor: const AlwaysStoppedAnimation<Color>(Colors.white),
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'XP: ${userProvider.xp % 1000}/1000',
+                style: const TextStyle(
+                  fontSize: 12,
+                  color: Colors.white70,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         );
       },
     );
   }
 
-  /// Seção de estatísticas
-  Widget _buildStatsSection(BuildContext context) {
+  Widget _buildQuickStatsSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Estatísticas',
+          'Visão Geral',
           style: TextStyle(
             fontSize: 18,
             fontWeight: FontWeight.bold,
           ),
         ),
         const SizedBox(height: 12),
-        Consumer2<PurchaseProvider, StatsProvider>(
-          builder: (context, purchaseProvider, statsProvider, _) {
-            return Row(
+        Consumer<PurchaseProvider>(
+          builder: (context, purchaseProvider, _) {
+            return Column(
               children: [
-                Expanded(
-                  child: _buildStatCard(
-                    label: 'Total Gasto',
-                    value: 'R\$ ${purchaseProvider.totalSpent.toStringAsFixed(2)}',
-                    icon: Icons.money,
+                _buildStatRow(
+                  context,
+                  'Total Gasto',
+                  CurrencyFormatter.formatCurrency(
+                    purchaseProvider.totalSpent,
                   ),
+                  Icons.money_outlined,
+                  Colors.green,
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: _buildStatCard(
-                    label: 'Compras',
-                    value: purchaseProvider.purchaseCount.toString(),
-                    icon: Icons.shopping_bag,
-                  ),
+                const SizedBox(height: 12),
+                _buildStatRow(
+                  context,
+                  'Compras',
+                  purchaseProvider.purchaseCount.toString(),
+                  Icons.shopping_bag_outlined,
+                  Colors.blue,
+                ),
+                const SizedBox(height: 12),
+                _buildStatRow(
+                  context,
+                  'Pausadas',
+                  purchaseProvider.purchases
+                      .where((p) => p.isPaused)
+                      .length
+                      .toString(),
+                  Icons.pause_circle_outlined,
+                  Colors.orange,
                 ),
               ],
             );
@@ -159,51 +279,89 @@ class HomeScreen extends StatelessWidget {
     );
   }
 
-  /// Card de estatística
-  Widget _buildStatCard({
-    required String label,
-    required String value,
-    required IconData icon,
-  }) {
-    return Card(
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            Icon(icon, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-            const SizedBox(height: 4),
-            Text(
-              label,
-              style: const TextStyle(
-                fontSize: 12,
-                color: Colors.grey,
-              ),
-            ),
-          ],
+  Widget _buildStatRow(
+    BuildContext context,
+    String label,
+    String value,
+    IconData icon,
+    Color color,
+  ) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(
+          color: Theme.of(context).colorScheme.outlineVariant,
         ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.2),
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Icon(icon, color: color, size: 24),
+          ),
+          const SizedBox(width: 16),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
 
-  /// Seção de compras recentes
-  Widget _buildPurchasesSection(BuildContext context) {
+  Widget _buildRecentPurchasesSection(BuildContext context) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const Text(
-          'Compras Recentes',
-          style: TextStyle(
-            fontSize: 18,
-            fontWeight: FontWeight.bold,
-          ),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            const Text(
+              'Compras Recentes',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Consumer<PurchaseProvider>(
+              builder: (context, purchaseProvider, _) {
+                if (purchaseProvider.purchases.isEmpty) {
+                  return const SizedBox.shrink();
+                }
+                return Text(
+                  'Total: ${purchaseProvider.purchaseCount}',
+                  style: const TextStyle(
+                    fontSize: 12,
+                    color: Colors.grey,
+                  ),
+                );
+              },
+            ),
+          ],
         ),
         const SizedBox(height: 12),
         Consumer<PurchaseProvider>(
@@ -211,19 +369,28 @@ class HomeScreen extends StatelessWidget {
             if (purchaseProvider.purchases.isEmpty) {
               return Center(
                 child: Padding(
-                  padding: const EdgeInsets.symmetric(vertical: 32),
+                  padding: const EdgeInsets.symmetric(vertical: 48),
                   child: Column(
                     children: [
                       Icon(
-                        Icons.inbox,
-                        size: 48,
+                        Icons.inbox_outlined,
+                        size: 64,
                         color: Colors.grey[300],
                       ),
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 16),
                       Text(
                         'Nenhuma compra registrada',
                         style: TextStyle(
                           color: Colors.grey[600],
+                          fontSize: 16,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      Text(
+                        'Toque o botão + para adicionar',
+                        style: TextStyle(
+                          color: Colors.grey[500],
+                          fontSize: 14,
                         ),
                       ),
                     ],
@@ -238,17 +405,57 @@ class HomeScreen extends StatelessWidget {
               itemCount: purchaseProvider.purchases.length,
               itemBuilder: (context, index) {
                 final purchase = purchaseProvider.purchases[index];
-                return ListTile(
-                  title: Text(purchase.title),
-                  subtitle: Text(purchase.category),
-                  trailing: Text(
-                    'R\$ ${purchase.price.toStringAsFixed(2)}',
-                    style: const TextStyle(fontWeight: FontWeight.bold),
-                  ),
-                  leading: Icon(
-                    purchase.isPaused
-                        ? Icons.pause_circle
-                        : Icons.shopping_bag_outlined,
+                return Card(
+                  margin: const EdgeInsets.only(bottom: 12),
+                  child: ListTile(
+                    contentPadding: const EdgeInsets.all(12),
+                    leading: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: Colors.blue.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                      ),
+                      child: Icon(
+                        purchase.isPaused
+                            ? Icons.pause_circle
+                            : Icons.shopping_bag_outlined,
+                        color: purchase.isPaused ? Colors.orange : Colors.blue,
+                      ),
+                    ),
+                    title: Text(
+                      purchase.title,
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        decoration: purchase.isPaused
+                            ? TextDecoration.lineThrough
+                            : TextDecoration.none,
+                      ),
+                    ),
+                    subtitle: Text(
+                      purchase.category,
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    trailing: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          CurrencyFormatter.formatCurrency(purchase.price),
+                          style: const TextStyle(
+                            fontWeight: FontWeight.bold,
+                            color: Colors.green,
+                          ),
+                        ),
+                        if (purchase.isPaused)
+                          const Text(
+                            'Pausada',
+                            style: TextStyle(
+                              fontSize: 10,
+                              color: Colors.orange,
+                            ),
+                          ),
+                      ],
+                    ),
                   ),
                 );
               },

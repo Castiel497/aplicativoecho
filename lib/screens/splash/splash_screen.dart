@@ -1,7 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:consome_plus/screens/home/home_screen.dart';
 
-/// Tela de splash (carregamento) do app
 class SplashScreen extends StatefulWidget {
   const SplashScreen({Key? key}) : super(key: key);
 
@@ -13,11 +11,6 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
-    _navigateToHome();
-  }
-
-  /// Navegar para home após 2 segundos
-  void _navigateToHome() {
     Future.delayed(const Duration(seconds: 2), () {
       if (mounted) {
         Navigator.of(context).pushReplacementNamed('/home');
