@@ -9,13 +9,15 @@ class AppWrapper extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Consumer<UserProvider>(
-      builder: (context, userProvider, _) {
-        if (userProvider.userName.isEmpty) {
-          return const WelcomeScreen();
-        }
-        return const HomeScreen();
-      },
-    );
+    // Ler o provider diretamente do contexto garante que este build
+    // esteja sob o MultiProvider definido em main.dart
+    final userProvider = Provider.of<UserProvider>(context);
+
+    // Se o nome do usuário estiver vazio, mostramos WelcomeScreen,
+    // caso contrário, HomeScreen.
+    if (userProvider.userName.isEmpty) {
+      return const WelcomeScreen();
+    }
+    return const HomeScreen();
   }
 }
